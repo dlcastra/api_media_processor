@@ -2,6 +2,7 @@ import {GetObjectCommand} from "@aws-sdk/client-s3";
 import {streamToBuffer} from "../utils.js";
 import {s3} from "./clients.js";
 
+
 async function getFileMetaData(bucketName, key) {
     try {
         const command = new GetObjectCommand({Bucket: bucketName, Key: key});

@@ -1,7 +1,7 @@
 import sharp from "sharp";
 
 
-class ImageService {
+class ImageFlipperService {
     constructor(buffer, fileFormat, flipType) {
         this.buffer = buffer;
         this.fileFormat = fileFormat;
@@ -45,7 +45,9 @@ class ImageService {
 }
 
 
-const getImageService = async (file, fileFormat, flipType) => {
-    return new ImageService(file, fileFormat, flipType);
+const getImageFlipperService = async (file, fileFormat, flipType) => {
+    return new ImageFlipperService(file, fileFormat, flipType);
 }
-export default getImageService;
+
+
+export {getImageFlipperService};

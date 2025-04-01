@@ -1,14 +1,16 @@
 import express from "express";
 import multer from "multer";
 
-import getImageService from "./services.js";
-import getImageValidator from "./validators.js";
-import {getFileMetaData} from "../aws/handlers.js";
 import {AppSettings} from "../core/settings.js";
-
+import {extractTextFromImage} from "../azure/handlers.js";
+import {getImageFlipperService} from "./services.js";
+import {getImageValidator} from "./validators.js";
+import {getFileMetaData} from "../aws/handlers.js";
+import {TranslatorService} from "../translators/services.js";
 
 const upload = multer({storage: multer.memoryStorage()});
 const router = express.Router();
+
 
 router.post("/flip", upload.single("file"), async (req, res) => {
     try {
@@ -26,7 +28,7 @@ router.post("/flip", upload.single("file"), async (req, res) => {
         const fileBuffer = req.body?.s3Key ? req.body.file?.buffer : req.file?.buffer;
         const fileFormat = req.body?.s3Key ? req.body.file?.contentType : req.file?.mimetype;
 
-        const imageService = await getImageService(fileBuffer, fileFormat, req.body.flipType);
+        const imageService = await getImageFlipperService(fileBuffer, fileFormat, req.body.flipType);
         const invertedBuffer = await imageService.invert();
 
         res.set("Content-Type", fileFormat);
@@ -34,6 +36,27 @@ router.post("/flip", upload.single("file"), async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({error: "An error occurred processing the image"});
+    }
+});
+
+
+router.post("/extract-text", async (req, res) => {
+    try {
+        const bucketName = AppSettings.AWS_S3_BUCKET_NAME;
+        const file = await getFileMetaData(bucketName, req.body.s3Key);
+        let extractedText = await extractTextFromImage(file.buffer);
+
+        if (req.body.translator) {
+            const {lang_to, lang_from, translator} = req.body
+            const service = new TranslatorService(extractedText.result, lang_to, lang_from, translator);
+            extractedText.result = await service.translate();
+        }
+
+        res.json(extractedText);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "An error occurred extracting text from the image"});
     }
 });
 

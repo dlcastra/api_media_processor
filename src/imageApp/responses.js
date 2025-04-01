@@ -1,4 +1,4 @@
-class ResponsesErrorMessage {
+class ResponseErrorMessages {
     // Request error messages
     static EMPTY_REQUEST_BODY = "Request body is empty required fields: file, flipType, callbackUrl";
     static NO_FILE_UPLOADED = "No file uploaded";
@@ -10,4 +10,4 @@ class ResponsesErrorMessage {
     static FILE_IS_TOO_LARGE = "File is too large";
 }
 
-export default ResponsesErrorMessage;
+export default ResponseErrorMessages;

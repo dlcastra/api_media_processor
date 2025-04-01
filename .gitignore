@@ -399,3 +399,6 @@ FodyWeavers.xsd
 
 #.idea
 .idea
+
+# Google Cloud Platform
+env/*

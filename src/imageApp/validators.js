@@ -1,8 +1,8 @@
 import {FLIP_TYPES, IMAGE_FORMATS, MAX_IMAGE_SIZE_MB, MAX_IMAGE_SIZE_BYTES} from "../core/constants.js";
-import ResponsesErrorMessage from "./responses.js";
+import ResponseErrorMessages from "./responses.js";
 
 
-const REM = ResponsesErrorMessage;
+const REM = ResponseErrorMessages;
 
 class ValidateRequestBody {
     constructor(request) {
@@ -136,4 +136,4 @@ const getImageValidator = async (request) => {
     return new ImageFlipRequestValidator(request);
 };
 
-export default getImageValidator
+export {getImageValidator};

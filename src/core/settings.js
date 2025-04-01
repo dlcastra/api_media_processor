@@ -22,6 +22,21 @@ class AppSettings {
     static get AWS_REGION() {
         return process.env.AWS_REGION || "eu-north-1";
     }
+
+    static get AZURE_OCR_ENDPOINT() {
+        return process.env.AZURE_OCR_ENDPOINT;
+    }
+
+    static get AZURE_OCR_SECRET_KEY() {
+        return process.env.AZURE_OCR_SECRET_KEY;
+    }
+
+    static get GOOGLE_PROJECT_ID() {
+        return process.env.GOOGLE_PROJECT_ID;
+    }
+    static get GOOGLE_APPLICATION_CREDENTIALS() {
+        return process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    }
 }
 
 

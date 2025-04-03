@@ -21,7 +21,7 @@ async function extractTextFromImage(buffer) {
                 .flatMap(page => page.lines)
                 .map(line => line.text)
                 .join(" ");
-            return {result: text, status: result.status};
+            return {result: text, status: "success"};
         }
 
         return {result: AzureResponses.TEXT_EXTRACTION_ERROR, status: result.status};

@@ -1,3 +1,7 @@
+import {v4 as uuidv4} from "uuid";
+
+import axios from "axios";
+
 import {AppSettings} from "../core/settings.js";
 import {googleTranslatorClient} from "./clients.js";
 
@@ -11,7 +15,10 @@ class TranslatorService {
     }
 
     async translate() {
-        return this.translator === "google" ? await this.useGoogleTranslator() : await this.useDeeplTranslator();
+        if (this.translator === "google") return await this.useAzureTranslator()
+        else if (this.translator === "azure") return await this.useGoogleTranslator();
+
+        return "Could not find translator, please choose the available ones: google or azure";
     }
 
     async useGoogleTranslator() {
@@ -30,8 +37,29 @@ class TranslatorService {
         return response.translations[0].translatedText;
     }
 
-    async useDeeplTranslator() {
-        return null;
+    async useAzureTranslator() {
+        const with_lang_from_url = `${AppSettings.AZURE_TRANSLATOR_ENDPOINT}?api-version=3.0&from=${this.lang_from}&to=${this.lang_to}`;
+        const without_lang_from_url = `${AppSettings.AZURE_TRANSLATOR_ENDPOINT}?api-version=3.0&to=${this.lang_to}`;
+        const response = await axios.post(
+            this.lang_from ? with_lang_from_url : without_lang_from_url,
+            [{text: this.text}],
+            {
+                headers: {
+                    "Ocp-Apim-Subscription-Key": AppSettings.AZURE_TRANSLATOR_SECRET_KEY,
+                    "Ocp-Apim-Subscription-Region": AppSettings.AZURE_TRANSLATOR_LOCATION,
+                    "Content-Type": "application/json",
+                    "X-ClientTraceId": uuidv4().toString(),
+                },
+                params: {
+                    "api-version": "3.0",
+                    "from": this.lang_from,
+                    "to": this.lang_to,
+                },
+                responseType: "json",
+            }
+        )
+        console.log(response.data);
+        return response.data[0].translations[0].text;
     }
 }
 

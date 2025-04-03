@@ -31,9 +31,22 @@ class AppSettings {
         return process.env.AZURE_OCR_SECRET_KEY;
     }
 
+    static get AZURE_TRANSLATOR_SECRET_KEY() {
+        return process.env.AZURE_TRANSLATOR_SECRET_KEY;
+    }
+
+    static get AZURE_TRANSLATOR_LOCATION() {
+        return process.env.AZURE_TRANSLATOR_LOCATION;
+    }
+
+    static get AZURE_TRANSLATOR_ENDPOINT() {
+        return process.env.AZURE_TRANSLATOR_ENDPOINT;
+    }
+
     static get GOOGLE_PROJECT_ID() {
         return process.env.GOOGLE_PROJECT_ID;
     }
+
     static get GOOGLE_APPLICATION_CREDENTIALS() {
         return process.env.GOOGLE_APPLICATION_CREDENTIALS;
     }

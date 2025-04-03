@@ -15,8 +15,8 @@ class TranslatorService {
     }
 
     async translate() {
-        if (this.translator === "google") return await this.useAzureTranslator()
-        else if (this.translator === "azure") return await this.useGoogleTranslator();
+        if (this.translator === "google") return await this.useGoogleTranslator()
+        else if (this.translator === "azure") return await this.useAzureTranslator();
 
         return "Could not find translator, please choose the available ones: google or azure";
     }
@@ -50,15 +50,10 @@ class TranslatorService {
                     "Content-Type": "application/json",
                     "X-ClientTraceId": uuidv4().toString(),
                 },
-                params: {
-                    "api-version": "3.0",
-                    "from": this.lang_from,
-                    "to": this.lang_to,
-                },
                 responseType: "json",
             }
-        )
-        console.log(response.data);
+        );
+
         return response.data[0].translations[0].text;
     }
 }

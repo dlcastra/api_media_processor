@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 
 import {AppSettings} from "../core/settings.js";
+import {CommonResponseErrorMessages} from "../responses.js";
 import {extractTextFromImage} from "../azure/handlers.js";
 import {getImageFlipperService} from "./services.js";
 import {getImageValidator} from "./validators.js";
@@ -35,15 +36,15 @@ router.post("/flip", upload.single("file"), async (req, res) => {
         res.send(invertedBuffer);
     } catch (error) {
         console.error(error);
-        res.status(500).json({error: "An error occurred processing the image"});
+        res.status(500).json({error: CommonResponseErrorMessages.INTERNAL_IMAGE_PROCESSING_ERROR});
     }
 });
 
 
-router.post("/extract-text", async (req, res) => {
+router.post("/extract-text", upload.single("file"), async (req, res) => {
     try {
         const bucketName = AppSettings.AWS_S3_BUCKET_NAME;
-        const file = await getFileMetaData(bucketName, req.body.s3Key);
+        const file = req.body?.s3Key ? await getFileMetaData(bucketName, req.body.s3Key) : req.file;
         let extractedText = await extractTextFromImage(file.buffer);
 
         if (req.body.translator) {
@@ -56,7 +57,7 @@ router.post("/extract-text", async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({error: "An error occurred extracting text from the image"});
+        res.status(500).json({error: CommonResponseErrorMessages.INTERNAL_IMAGE_PROCESSING_ERROR});
     }
 });
 

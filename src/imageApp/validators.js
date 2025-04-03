@@ -5,21 +5,15 @@ import ResponseErrorMessages from "./responses.js";
 const REM = ResponseErrorMessages;
 
 class ValidateRequestBody {
-    constructor(request) {
+    constructor(request, requiredFields) {
         this.buffer = request.file?.buffer || request.body.file?.buffer;
-        this.flipType = request.body.flipType?.replaceAll(/\s/g, "").toLowerCase();
+        this.requiredFields = requiredFields || [];
         this.errors = {};
     }
 
     async validate() {
         this.errors = {};
-
-        const hasEmptyFields = await this.hasEmptyFields();
-        const invalidFlipType = await this.invalidFlipType();
-
-        if (hasEmptyFields || invalidFlipType) {
-            return this.errors;
-        }
+        if (await this.hasEmptyFields()) return this.errors;
 
         return null;
     }
@@ -28,15 +22,12 @@ class ValidateRequestBody {
         const emptyRequestBody = await this.noRequestBody();
         if (emptyRequestBody) return true;
 
-        const emptyFileField = await this.noFileUploaded();
-        const emptyFlipType = await this.noFlipTypeSpecified();
-
-        return emptyFileField || emptyFlipType;
+        return await this.noFileUploaded();
     }
 
     async noRequestBody() {
-        if (!this.buffer && !this.flipType) {
-            this.errors.request = {message: REM.EMPTY_REQUEST_BODY};
+        if (!this.buffer) {
+            this.errors.request = {message: REM.getEmptyRequestBodyMessage(this.requiredFields)};
             return true;
         }
         return false;
@@ -44,26 +35,7 @@ class ValidateRequestBody {
 
     async noFileUploaded() {
         if (!this.buffer) {
-            this.errors.file = {message: REM.NO_FILE_UPLOADED};
-            return true;
-        }
-        return false;
-    }
-
-    async noFlipTypeSpecified() {
-        if (!this.flipType) {
-            this.errors.flipType = {message: REM.NO_FLIP_TYPE_SPECIFIED};
-            return true;
-        }
-        return false;
-    }
-
-    async invalidFlipType() {
-        if (this.flipType && !FLIP_TYPES.includes(this.flipType)) {
-            this.errors.flipType = {
-                message: REM.INVALID_FLIP_TYPE,
-                validTypes: FLIP_TYPES
-            };
+            this.errors.file = {message: REM.getEmptyRequestBodyMessage()};
             return true;
         }
         return false;
@@ -113,8 +85,10 @@ class ValidateImage {
 
 class ImageFlipRequestValidator {
     constructor(request) {
-        this.requestBodyValidator = new ValidateRequestBody(request);
+        this.requestBodyValidator = new ValidateRequestBody(request, ["file", "flipType"]);
         this.imageValidator = new ValidateImage(request);
+        this.flipType = request.body.flipType?.replaceAll(/\s/g, "").toLowerCase();
+        this.errors = {};
     }
 
     async validate() {
@@ -128,12 +102,68 @@ class ImageFlipRequestValidator {
             return imageErrors;
         }
 
+        if (await this.invalidFlipType()) return this.errors;
+        if (await this.noFlipTypeSpecified()) return this.errors;
+
         return null;
+    }
+
+    async invalidFlipType() {
+        if (this.flipType && !FLIP_TYPES.includes(this.flipType)) {
+            this.errors.flipType = {
+                message: REM.INVALID_FLIP_TYPE,
+                validTypes: FLIP_TYPES
+            };
+            return true;
+        }
+        return false;
+    }
+
+    async noFlipTypeSpecified() {
+        if (!this.flipType) {
+            this.errors.flipType = {message: REM.NO_FLIP_TYPE_SPECIFIED};
+            return true;
+        }
+        return false;
     }
 }
 
-const getImageValidator = async (request) => {
+class ImageTextExtractorRequestValidator {
+    constructor(request) {
+        this.requestBodyValidator = new ValidateRequestBody(request, ["file", "translator", "lang_to"]);
+        this.imageValidator = new ValidateImage(request);
+        this.request = request.body;
+        this.errors = {};
+    }
+
+    async validate() {
+        const bodyErrors = await this.requestBodyValidator.validate();
+        if (bodyErrors) return bodyErrors;
+
+        const imageErrors = await this.imageValidator.validate();
+        if (imageErrors) return imageErrors;
+
+        const noLangToSpecified = await this.noLangToSpecified();
+        if (noLangToSpecified) return this.errors;
+
+        return null;
+    }
+
+    async noLangToSpecified() {
+        if (this.request.translator && !this.request.lang_to) {
+            this.errors.lang_to = {message: REM.NO_LANG_TO_SPECIFIED};
+            return true;
+        }
+        return false;
+    }
+}
+
+const getImageFlipValidator = async (request) => {
     return new ImageFlipRequestValidator(request);
 };
 
-export {getImageValidator};
+const getImageTextExtractorValidator = async (request) => {
+    return new ImageTextExtractorRequestValidator(request);
+};
+
+export {getImageFlipValidator, getImageTextExtractorValidator};

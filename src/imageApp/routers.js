@@ -5,7 +5,7 @@ import {AppSettings} from "../core/settings.js";
 import {CommonResponseErrorMessages} from "../responses.js";
 import {extractTextFromImage} from "../azure/handlers.js";
 import {getImageFlipperService} from "./services.js";
-import {getImageValidator} from "./validators.js";
+import {getImageFlipValidator, getImageTextExtractorValidator} from "./validators.js";
 import {getFileMetaData} from "../aws/handlers.js";
 import {TranslatorService} from "../translators/services.js";
 
@@ -22,7 +22,7 @@ router.post("/flip", upload.single("file"), async (req, res) => {
             req.body = {...req.body, file};
         }
 
-        const validator = await getImageValidator(req);
+        const validator = await getImageFlipValidator(req);
         const errors = await validator.validate();
         if (errors) return res.status(400).json(errors);
 
@@ -44,6 +44,11 @@ router.post("/flip", upload.single("file"), async (req, res) => {
 router.post("/extract-text", upload.single("file"), async (req, res) => {
     try {
         const bucketName = AppSettings.AWS_S3_BUCKET_NAME;
+
+        const validator = await getImageTextExtractorValidator(req);
+        const errors = await validator.validate();
+        if (errors) return res.status(400).json(errors);
+
         const file = req.body?.s3Key ? await getFileMetaData(bucketName, req.body.s3Key) : req.file;
         let extractedText = await extractTextFromImage(file.buffer);
 

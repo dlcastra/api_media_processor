@@ -4,11 +4,9 @@ import multer from "multer";
 import {AppSettings} from "../core/settings.js";
 import {CommonResponseErrorMessages} from "../responses.js";
 import {callback} from "../utils.js";
-import {extractTextFromImage} from "../azure/handlers.js";
-import {getImageFlipperService} from "./services.js";
 import {getImageFlipValidator, getImageTextExtractorValidator} from "./validators.js";
-import {getFileMetaData, uploadFileBytes} from "../aws/handlers.js";
-import {TranslatorService} from "../translators/services.js";
+import {getFileMetaData} from "../aws/handlers.js";
+import {imageFlipHandler, imageTextExtractionHandler} from "./handlers.js";
 
 const upload = multer({storage: multer.memoryStorage()});
 const router = express.Router();
@@ -29,19 +27,13 @@ router.post("/flip", upload.single("file"), async (req, res) => {
             return res.status(400).json(errors);
         }
 
-        const fileBuffer = req.body?.s3Key ? req.body.file?.buffer : req.file?.buffer;
-        const fileFormat = req.body?.s3Key ? req.body.file?.contentType : req.file?.mimetype;
-
-        const imageService = await getImageFlipperService(fileBuffer, fileFormat, req.body.flipType);
-        const invertedBuffer = await imageService.invert();
-
-        const uploadingResult = await uploadFileBytes(bucketName, "processed", req.body.s3Key, invertedBuffer, fileFormat);
-        if (!uploadingResult.success) {
-            await callback(req.body.callbackUrl, "error", {error: uploadingResult.error});
+        const processing_result = await imageFlipHandler(req, bucketName);
+        if (!processing_result.success) {
+            await callback(req.body.callbackUrl, "error", {error: processing_result.error});
             return res.status(500).json({error: CommonResponseErrorMessages.INTERNAL_IMAGE_PROCESSING_ERROR});
         }
 
-        const callbackResponse = await callback(req.body.callbackUrl, "success", uploadingResult);
+        const callbackResponse = await callback(req.body.callbackUrl, "success", processing_result);
         if (callbackResponse.status === "error") {
             return res.status(500).send(callbackResponse);
         }
@@ -66,18 +58,19 @@ router.post("/extract-text", upload.single("file"), async (req, res) => {
 
         const validator = await getImageTextExtractorValidator(req);
         const errors = await validator.validate();
-        if (errors) return res.status(400).json(errors);
-
-        const fileBuffer = req.body?.s3Key ? req.body.file?.buffer : req.file?.buffer;
-        let extractedText = await extractTextFromImage(fileBuffer);
-
-        if (req.body.translator) {
-            const {lang_to, lang_from, translator} = req.body
-            const service = new TranslatorService(extractedText.result, lang_to, lang_from, translator);
-            extractedText.result = await service.translate();
+        if (errors) {
+            return res.status(400).json(errors);
         }
 
-        const callbackResponse = await callback(req.body.callbackUrl, extractedText.status, {extractedText: extractedText.result});
+        const processing_result = await imageTextExtractionHandler(req);
+        if (!processing_result.success) {
+            await callback(req.body.callbackUrl, "error", {error: processing_result.error});
+            return res.status(500).json({error: CommonResponseErrorMessages.INTERNAL_IMAGE_PROCESSING_ERROR});
+        }
+
+        const callbackResponse = await callback(
+            req.body.callbackUrl, processing_result.data.status, {extractedText: processing_result.data.result}
+        );
         if (callbackResponse.status === "error") {
             return res.status(500).send(callbackResponse);
         }

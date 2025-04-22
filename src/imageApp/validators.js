@@ -7,6 +7,7 @@ const REM = ResponseErrorMessages;
 class ValidateRequestBody {
     constructor(request, requiredFields) {
         this.buffer = request.file?.buffer || request.body.file?.buffer;
+        this.callbackUrl = request.body.callbackUrl;
         this.requiredFields = requiredFields || [];
         this.errors = {};
     }
@@ -20,14 +21,24 @@ class ValidateRequestBody {
 
     async hasEmptyFields() {
         const emptyRequestBody = await this.noRequestBody();
-        if (emptyRequestBody) return true;
+        const emptyCallbackUrl = await this.noCallbackUrl();
+        const emptyFile = await this.noFileUploaded();
 
-        return await this.noFileUploaded();
+        return emptyRequestBody || emptyCallbackUrl || emptyFile;
     }
+
 
     async noRequestBody() {
         if (!this.buffer) {
             this.errors.request = {message: REM.getEmptyRequestBodyMessage(this.requiredFields)};
+            return true;
+        }
+        return false;
+    }
+
+    async noCallbackUrl() {
+        if (!this.callbackUrl) {
+            this.errors.callbackUrl = {message: REM.NO_CALLBACK_URL};
             return true;
         }
         return false;

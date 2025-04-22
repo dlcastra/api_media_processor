@@ -1,6 +1,7 @@
 class ResponseErrorMessages {
     // Request error messages
     static EMPTY_REQUEST_BODY = "Request body is empty required fields: ";
+    static NO_CALLBACK_URL = "No callback URL specified";
     static NO_FILE_UPLOADED = "No file uploaded";
     static NO_FLIP_TYPE_SPECIFIED = "No flip type specified";
     static NO_LANG_TO_SPECIFIED = "Missed language to translate to. Required field: lang_to";

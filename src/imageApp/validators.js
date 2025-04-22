@@ -85,7 +85,7 @@ class ValidateImage {
 
 class ImageFlipRequestValidator {
     constructor(request) {
-        this.requestBodyValidator = new ValidateRequestBody(request, ["file", "flipType"]);
+        this.requestBodyValidator = new ValidateRequestBody(request, ["file or s3Key", "flipType"]);
         this.imageValidator = new ValidateImage(request);
         this.flipType = request.body.flipType?.replaceAll(/\s/g, "").toLowerCase();
         this.errors = {};

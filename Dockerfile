@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ARG NODE_VERSION=20.15.1
-FROM node:${NODE_VERSION}-alpine AS builder
+FROM node:${NODE_VERSION}-slim AS builder
 
 WORKDIR /usr/server
 
@@ -16,7 +16,7 @@ ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
 
 # Production stage
-FROM node:${NODE_VERSION}-alpine AS production
+FROM node:${NODE_VERSION}-slim AS production
 
 WORKDIR /usr/server
 
@@ -31,4 +31,3 @@ USER node
 EXPOSE 3000
 
 CMD ["node", "app.js"]
-RUN ls /usr/server/

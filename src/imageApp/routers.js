@@ -33,11 +33,7 @@ router.post("/flip", upload.single("file"), async (req, res) => {
             return res.status(500).json({error: CommonResponseErrorMessages.INTERNAL_IMAGE_PROCESSING_ERROR});
         }
 
-        const callbackResponse = await callback(req.body.callbackUrl, "success", processing_result);
-        if (callbackResponse.status === "error") {
-            return res.status(500).send(callbackResponse);
-        }
-
+        const callbackResponse = await callback(req.body.callbackUrl, "success", processing_result.data);
         return res.status(201).send(callbackResponse);
 
     } catch (error) {
@@ -71,9 +67,6 @@ router.post("/extract-text", upload.single("file"), async (req, res) => {
         const callbackResponse = await callback(
             req.body.callbackUrl, processing_result.data.status, {extractedText: processing_result.data.result}
         );
-        if (callbackResponse.status === "error") {
-            return res.status(500).send(callbackResponse);
-        }
 
         return res.status(201).send(callbackResponse);
 

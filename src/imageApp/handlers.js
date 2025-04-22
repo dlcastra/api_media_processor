@@ -7,8 +7,9 @@ async function imageFlipHandler(req, bucketName) {
     try {
         const fileBuffer = req.body?.s3Key ? req.body.file?.buffer : req.file?.buffer;
         const fileFormat = req.body?.s3Key ? req.body.file?.contentType : req.file?.mimetype;
+        const flipType = req.body.flipType;
 
-        const imageService = await getImageFlipperService(fileBuffer, fileFormat, req.body.flipType);
+        const imageService = await getImageFlipperService(fileBuffer, fileFormat, flipType);
         const invertedBuffer = await imageService.invert();
 
         const uploadingResult = await uploadFileBytes(bucketName, "processed", req.body.s3Key, invertedBuffer, fileFormat);

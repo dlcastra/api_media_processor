@@ -43,6 +43,14 @@ class AppSettings {
         return process.env.AZURE_TRANSLATOR_ENDPOINT;
     }
 
+    static get AZURE_SERVICE_BUS_CONNECTION_STRING() {
+        return process.env.AZURE_SERVICE_BUS_CONNECTION_STRING;
+    }
+
+    static get AZURE_SERVICE_BUS_QUEUE_NAME() {
+        return process.env.AZURE_SERVICE_BUS_QUEUE_NAME;
+    }
+
     static get GOOGLE_PROJECT_ID() {
         return process.env.GOOGLE_PROJECT_ID;
     }

@@ -1,7 +1,58 @@
+import {AppSettings} from "../core/settings.js";
 import {AzureResponses} from "./responses.js"
 import {CommonResponseErrorMessages} from "../responses.js";
-import {ocrClient} from "./clients.js";
+import {busQueueClient, ocrClient} from "./clients.js";
+import {callback} from "../utils.js";
+import {getFileMetaData} from "../aws/handlers.js";
+import {imageFlipHandler, imageTextExtractionHandler} from "../imageApp/handlers.js";
 
+
+class AzureProcessQueueMessages {
+    constructor() {
+        this.bucketName = AppSettings.AWS_S3_BUCKET_NAME;
+    }
+    processMessage = async (message) => {
+        try {
+            let body = message.body;
+            const callbackUrl = body.callbackUrl;
+
+            if (body.s3Key) {
+                const file = await getFileMetaData(this.bucketName, body.s3Key);
+                body = {...body, file};
+            }
+
+            if (body?.action === "flip_image") {
+                const imageFlipResult = await imageFlipHandler({ body }, this.bucketName);
+                if (!imageFlipResult.success) {
+                    await callback(callbackUrl, "error", {error: imageFlipResult.error});
+                }
+
+                await callback(callbackUrl, "success", imageFlipResult.data);
+
+            } else if (body?.action === "extract_text") {
+                const textExtractionResult = await imageTextExtractionHandler({ body });
+                if (!textExtractionResult.success) {
+                    await callback(callbackUrl, "error", {error: textExtractionResult.error});
+                }
+
+                await callback(
+                    callbackUrl, textExtractionResult.data.status, {extractedText: textExtractionResult.data.result}
+                );
+
+            } else {
+                console.warn("Unknown action:", body?.action);
+                await callback(callbackUrl, "error", {error: "Unknown action"});
+            }
+
+        } catch (error) {
+            console.error("Error processing message:", error);
+        }
+    }
+
+    processError = async (args) => {
+        console.error(`Error from source ${args.errorSource} occurred: `, args.error);
+    }
+}
 
 async function extractTextFromImage(buffer) {
     try {
@@ -32,5 +83,16 @@ async function extractTextFromImage(buffer) {
     }
 }
 
+async function processBusQueue(connectionString, queueName) {
+    const client = await busQueueClient(connectionString, queueName);
+    const queueHandlers = new AzureProcessQueueMessages();
 
-export {extractTextFromImage};
+    client.subscribe({
+        processMessage: queueHandlers.processMessage,
+        processError: queueHandlers.processError,
+    });
+    console.log("Azure Service Bus listener started...");
+}
+
+
+export {extractTextFromImage, processBusQueue};

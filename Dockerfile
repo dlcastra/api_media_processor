@@ -1,33 +1,29 @@
 # syntax=docker/dockerfile:1
+ARG NODE_VERSION=22.15.0
 
-ARG NODE_VERSION=20.15.1
-FROM node:${NODE_VERSION}-slim AS builder
+FROM node:${NODE_VERSION}-alpine
 
-WORKDIR /usr/server
+# Use production node environment by default.
+ENV NODE_ENV production
 
-COPY package*.json ./
+WORKDIR /usr/src/service
 
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev && npm cache clean --force
+# Download dependencies as a separate step to take advantage of Docker's caching.
+# Leverage a cache mount to /root/.npm to speed up subsequent builds.
+# Leverage a bind mounts to package.json and package-lock.json to avoid having to copy them into
+# into this layer.
+RUN --mount=type=bind,source=package.json,target=package.json \
+    --mount=type=bind,source=package-lock.json,target=package-lock.json \
+    --mount=type=cache,target=/root/.npm \
+    npm ci --omit=dev
 
-COPY . .
-
-ARG NODE_ENV=production
-ENV NODE_ENV=$NODE_ENV
-
-# Production stage
-FROM node:${NODE_VERSION}-slim AS production
-
-WORKDIR /usr/server
-
-COPY --from=builder /usr/server/node_modules ./node_modules
-COPY --from=builder /usr/server/package*.json ./
-COPY --from=builder /usr/server/src ./src
-COPY --from=builder /usr/server/app.js ./app.js
-
-RUN chown -R node:node /usr/server
+# Run the application as a non-root user.
 USER node
 
+# Copy the rest of the source files into the image.
+COPY . .
+
+# Expose the port that the application listens on.
 EXPOSE 3000
 
 CMD ["node", "app.js"]
